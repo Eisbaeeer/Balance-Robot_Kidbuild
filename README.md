@@ -85,7 +85,7 @@ You will find all STL files and addons in the STL folder. Typically printed with
 ![Logo](pics/eyes.jpg)
 ![Logo](pics/pic1.jpg)
 ![Logo](pics/pic2.jpg)
-![Logo](pics/pic4.jpg)
+![Logo](pics/pic3.jpg)
 
 ## How to compile
 1. Install VS-Code
