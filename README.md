@@ -80,6 +80,7 @@ You will find all STL files and addons in the STL folder. Typically printed with
 | 2		 | O-ring 3mm ID 82mm							| 
 | 8		 | M3x8 screw									| 
 | 8		 | M3x10 screw									|
+| 8      | M3 nut                                       |
 | 12	 | self tapping screws 3mmx3mm					|
 
 ![Logo](pics/eyes.jpg)
