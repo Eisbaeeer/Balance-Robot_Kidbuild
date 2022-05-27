@@ -45,6 +45,7 @@ float Kp_position = KP_POSITION;
 float Kd_position = KD_POSITION;
 bool newControlParameters = false;
 bool modifing_control_parameters = false;
+bool fromWeb = false;
 int16_t position_error_sum_M1;
 int16_t position_error_sum_M2;
 float PID_errorSum;

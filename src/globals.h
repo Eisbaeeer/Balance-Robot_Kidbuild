@@ -47,6 +47,7 @@ extern float Kp_position;
 extern float Kd_position;
 extern bool newControlParameters;
 extern bool modifing_control_parameters;
+extern bool fromWeb;
 extern int16_t position_error_sum_M1;
 extern int16_t position_error_sum_M2;
 extern float PID_errorSum;

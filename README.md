@@ -99,3 +99,14 @@ You will find all STL files and addons in the STL folder. Typically printed with
 ## Weblinks to get running
 - http://www.kidbuild.de or https://shop.kidbuild.de
 E-Mail info@kidbuild.de
+
+## Changelog 
+
+### Version 1.0
+    Date: 20220527
+    Contributor: Kidbuild
+    - Added Web control for any browser
+    1. Connect to wifi of B-Robot
+    2. Open browser at 192.168.4.1
+    3. Take control via touch screen
+    
