@@ -103,7 +103,7 @@ E-Mail info@kidbuild.de
 ## Changelog 
 
 ### Version 1.0
-    Date: 20220527
+    Date: 20220529
     Contributor: Kidbuild
     - Added Web control for any browser
     1. Connect to wifi of B-Robot

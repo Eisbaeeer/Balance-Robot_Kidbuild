@@ -46,10 +46,10 @@
  
 #include <Wire.h>
 #include <WiFi.h>
-#include <ArduinoOTA.h>
 #include <Arduino.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+//#include <AsyncElegantOTA.h>
 #include "Control.h"
 #include "MPU6050.h"
 #include "Motors.h"
@@ -312,7 +312,7 @@ void setup() {
     String inputValue;
     String inputMessage;
     OSCnewMessage = 1;
-    
+ 
     // Get value for Forward/Backward
     if (request->hasParam(PARAM_FADER1)) {
       OSCpage = 1;
@@ -412,6 +412,7 @@ void setup() {
   server.on("/web", handleJoystickHtml);
 
   server.onNotFound (notFound);    // when a client requests an unknown URI (i.e. something other than "/"), call function "handleNotFound"
+  //AsyncElegantOTA.begin(&server);   // adding OTA via web-upload with http://192.168.4.1/update
   server.begin();                           // actually start the server
 
   initTimers();
@@ -434,8 +435,6 @@ void setup() {
     delay(200);
   }
   ledcWrite(6, SERVO_AUX_NEUTRO);
-
-  ArduinoOTA.begin();   // enable to receive update/upload firmware via Wifi OTA
 }
 
 void processOSCMsg() {
@@ -527,7 +526,6 @@ void processOSCMsg() {
 
 
 void loop() {
-  ArduinoOTA.handle();
 
   //task A
     if (taskA.previous == 0 || (millis() - taskA.previous > taskA.rate)) {
