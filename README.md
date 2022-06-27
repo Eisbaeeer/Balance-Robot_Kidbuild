@@ -87,6 +87,7 @@ You will find all STL files and addons in the STL folder. Typically printed with
 ![Logo](pics/pic1.jpg)
 ![Logo](pics/pic2.jpg)
 ![Logo](pics/pic3.jpg)
+![Logo](pics/camera.jpg)
 
 ## How to compile
 1. Install VS-Code
@@ -101,6 +102,12 @@ You will find all STL files and addons in the STL folder. Typically printed with
 E-Mail info@kidbuild.de
 
 ## Changelog 
+
+### Version 1.2
+	Date: 20220627
+	- Added joystick via browser
+	- Added background live view with esp32-came
+	- Added light, sound, servo control
 
 ### Version 1.0
     Date: 20220529
