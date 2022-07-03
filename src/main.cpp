@@ -3,12 +3,18 @@
  *      Author: anonymous
  * 
  *  Changelog:
-	  ### Version 1.2
-		(20220627)
-		- Added joystick via browser
-		- Added background live view with esp32-came
-		- Added light, sound, servo control
- 
+ * 
+ *  ### Verison 1.3
+ *  (20220703)
+ *  - Added OTA firmware web update
+ *  - Optimized web control
+ *
+ *  ### Version 1.2
+ *	(20220627)
+ *	- Added joystick via browser
+ *	- Added background live view with esp32-came
+ *	- Added light, sound, servo control
+ *
  *    ### Version 1.0
  *      (20220322)
  *      - Ported to platformio
@@ -55,7 +61,7 @@
 #include <Arduino.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
-//#include <AsyncElegantOTA.h>
+#include <AsyncElegantOTA.h>
 #include "Control.h"
 #include "MPU6050.h"
 #include "Motors.h"
@@ -68,6 +74,7 @@
 #include "driver/timer.h"
 #include "driver/ledc.h"
 #include "esp32-hal-ledc.h"
+
 
 const char* PARAM_FADER1 = "fader1";
 const char* PARAM_FADER2 = "fader2";
@@ -84,6 +91,7 @@ const char* PARAM_FADER6 = "fader6";
 const char joystick_html[] PROGMEM="<html>\n\t <head>\n\t\t <meta charset=\"utf-8\">\n\t\t <meta name=\"viewport\" content=\"width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0\">\t\t\n\t\t <style>\n\t\t body {\n\t\t\toverflow\t: hidden;\n\t\t\tpadding\t\t: 0;\n\t\t\tmargin\t\t: 0;\n\t\t\tbackground-image\t: url('http://192.168.4.111:81/stream');\n\t\t\tbackground-repeat\t\t: no-repeat;\n\t\t\tbackground-position: center center;\n\t\t\t}\n\t\t#info\n\t\t\t{\n\t\t\tcolor\t\t: #66F;\n\t\t\ttext-decoration\t: none;\n\t\t\tposition\t: absolute;\n\t\t\ttop\t\t: 0px;\n\t\t\twidth\t\t: 100%;\n\t\t\tpadding\t\t: 5px;\n\t\t\ttext-align\t: center;\n\t\t}\n\t\t#container {\n\t\t\twidth\t\t: 100%;\n\t\t\theight\t\t: 100%;\n\t\t\toverflow\t: hidden;\n\t\t\tpadding\t\t: 0;\n\t\t\tmargin\t\t: 0;\n\t\t\t-webkit-user-select\t: none;\n\t\t\t-moz-user-select\t: none;\n\t\t}\n\t\t</style>\n\n\t</head>\n\t<body>\n\n\t<div id=\"container\"></div>\n\n\t\n\n\t<div id=\"info\">Touch screen to control!\n\t\t\t<br>\n\t\t\t<p><b><hr><button onclick=\"window.location.href = '/web/function1.html'\">Licht / Light</button>\n\t\t\t<p><b><button onclick=\"window.location.href = '/web/function2.html'\">Beep</button>\n\t\t\t<p><b><button onclick=\"window.location.href = '/web/function3.html'\">Servo Arm</button>\n\t\t\t<hr>\n\t\t\t<span id=\"result\"></span>\n\t\t</div>\n\t\t<script src=\"./virtualjoystick.js\"></script>\n\t\t<script>\n\t\t\tconsole.log(\"touchscreen is\", VirtualJoystick.touchScreenAvailable() ? \"available\" : \"not available\");\n\t\n\t\t\tvar joystick\t= new VirtualJoystick({\n\t\t\t\tcontainer\t: document.getElementById('container'),\n\t\t\t\tmouseSupport\t: true,\n\t\t\t\tlimitStickTravel\t: true,\n\t\t\t});\n\t\t\tjoystick.addEventListener('touchStart', function(){\n\t\t\t\tconsole.log('down')\n\t\t\t})\n\t\t\tjoystick.addEventListener('touchEnd', function(){\n\t\t\t\tconsole.log('up')\n\t\t\t})\n\t\t\tvar prevX = 0;\n\t\t\tvar prevY = 0;\n\t\t\tvar newX = 0;\n\t\t\tvar newY = 0;\n\t\t\tsetInterval(function(){\n\t\t\t\tvar outputEl\t= document.getElementById('result');\n\t\t\t\tnewX = Math.round(joystick.deltaX());\n\t\t\t\tnewY = Math.round(joystick.deltaY()) * -1;\n\t\t\t\toutputEl.innerHTML\t= '<b>Position:</b> '\n\t\t\t\t\t+ ' X:'+newX\n\t\t\t\t\t+ ' Y:'+newY;\n\t\t\t\tif ( newX != prevX || newY != prevY || newX!=0 || newY!=0){\n\t\t\t\t\tvar xhr = new XMLHttpRequest();\n\t\t\t\t\txhr.open('PUT', \"./jsData.html?x=\"+newX+\"&y=\"+newY)\n\t\t\t\t\txhr.send();\n\t\t\t\t\tsetTimeout(function(){xhr.abort();},100);\n\t\t\t\t}\n\t\t\t\tprevX = newX;\n\t\t\t\tprevY = newY;\n\t\t\t}, 150);\n\t\t</script>\n\t</body>\n</html>";
 const char virtualjoystick_js[] PROGMEM="var VirtualJoystick\t= function(opts)\n{\n\topts\t\t\t= opts\t\t\t|| {};\n\tthis._container\t\t= opts.container\t|| document.body;\n\tthis._strokeStyle\t= opts.strokeStyle\t|| 'cyan';\n\tthis._stickEl\t\t= opts.stickElement\t|| this._buildJoystickStick();\n\tthis._baseEl\t\t= opts.baseElement\t|| this._buildJoystickBase();\n\tthis._mouseSupport\t= opts.mouseSupport !== undefined ? opts.mouseSupport : false;\n\tthis._stationaryBase\t= opts.stationaryBase || false;\n\tthis._baseX\t\t= this._stickX = opts.baseX || 0\n\tthis._baseY\t\t= this._stickY = opts.baseY || 0\n\tthis._limitStickTravel\t= opts.limitStickTravel || false\n\tthis._stickRadius\t= opts.stickRadius !== undefined ? opts.stickRadius : 100\n\tthis._useCssTransform\t= opts.useCssTransform !== undefined ? opts.useCssTransform : false\n\n\tthis._container.style.position\t= \"relative\"\n\n\tthis._container.appendChild(this._baseEl)\n\tthis._baseEl.style.position\t= \"absolute\"\n\tthis._baseEl.style.display\t= \"none\"\n\tthis._container.appendChild(this._stickEl)\n\tthis._stickEl.style.position\t= \"absolute\"\n\tthis._stickEl.style.display\t= \"none\"\n\n\tthis._pressed\t= false;\n\tthis._touchIdx\t= null;\n\t\n\tif(this._stationaryBase === true){\n\t\tthis._baseEl.style.display\t= \"\";\n\t\tthis._baseEl.style.left\t\t= (this._baseX - this._baseEl.width /2)+\"px\";\n\t\tthis._baseEl.style.top\t\t= (this._baseY - this._baseEl.height/2)+\"px\";\n\t}\n    \n\tthis._transform\t= this._useCssTransform ? this._getTransformProperty() : false;\n\tthis._has3d\t= this._check3D();\n\t\n\tvar __bind\t= function(fn, me){ return function(){ return fn.apply(me, arguments); }; };\n\tthis._$onTouchStart\t= __bind(this._onTouchStart\t, this);\n\tthis._$onTouchEnd\t= __bind(this._onTouchEnd\t, this);\n\tthis._$onTouchMove\t= __bind(this._onTouchMove\t, this);\n\tthis._container.addEventListener( 'touchstart'\t, this._$onTouchStart\t, false );\n\tthis._container.addEventListener( 'touchend'\t, this._$onTouchEnd\t, false );\n\tthis._container.addEventListener( 'touchmove'\t, this._$onTouchMove\t, false );\n\tif( this._mouseSupport ){\n\t\tthis._$onMouseDown\t= __bind(this._onMouseDown\t, this);\n\t\tthis._$onMouseUp\t= __bind(this._onMouseUp\t, this);\n\t\tthis._$onMouseMove\t= __bind(this._onMouseMove\t, this);\n\t\tthis._container.addEventListener( 'mousedown'\t, this._$onMouseDown\t, false );\n\t\tthis._container.addEventListener( 'mouseup'\t, this._$onMouseUp\t, false );\n\t\tthis._container.addEventListener( 'mousemove'\t, this._$onMouseMove\t, false );\n\t}\n}\n\nVirtualJoystick.prototype.destroy\t= function()\n{\n\tthis._container.removeChild(this._baseEl);\n\tthis._container.removeChild(this._stickEl);\n\n\tthis._container.removeEventListener( 'touchstart'\t, this._$onTouchStart\t, false );\n\tthis._container.removeEventListener( 'touchend'\t\t, this._$onTouchEnd\t, false );\n\tthis._container.removeEventListener( 'touchmove'\t, this._$onTouchMove\t, false );\n\tif( this._mouseSupport ){\n\t\tthis._container.removeEventListener( 'mouseup'\t\t, this._$onMouseUp\t, false );\n\t\tthis._container.removeEventListener( 'mousedown'\t, this._$onMouseDown\t, false );\n\t\tthis._container.removeEventListener( 'mousemove'\t, this._$onMouseMove\t, false );\n\t}\n}\n\n/**\n * @returns {Boolean} true if touchscreen is currently available, false otherwise\n*/\nVirtualJoystick.touchScreenAvailable\t= function()\n{\n\treturn 'createTouch' in document ? true : false;\n}\n\n/**\n * microevents.js - https://github.com/jeromeetienne/microevent.js\n*/\n;(function(destObj){\n\tdestObj.addEventListener\t= function(event, fct){\n\t\tif(this._events === undefined) \tthis._events\t= {};\n\t\tthis._events[event] = this._events[event]\t|| [];\n\t\tthis._events[event].push(fct);\n\t\treturn fct;\n\t};\n\tdestObj.removeEventListener\t= function(event, fct){\n\t\tif(this._events === undefined) \tthis._events\t= {};\n\t\tif( event in this._events === false  )\treturn;\n\t\tthis._events[event].splice(this._events[event].indexOf(fct), 1);\n\t};\n\tdestObj.dispatchEvent\t\t= function(event /* , args... */){\n\t\tif(this._events === undefined) \tthis._events\t= {};\n\t\tif( this._events[event] === undefined )\treturn;\n\t\tvar tmpArray\t= this._events[event].slice(); \n\t\tfor(var i = 0; i < tmpArray.length; i++){\n\t\t\tvar result\t= tmpArray[i].apply(this, Array.prototype.slice.call(arguments, 1))\n\t\t\tif( result !== undefined )\treturn result;\n\t\t}\n\t\treturn undefined\n\t};\n})(VirtualJoystick.prototype);\n\n//////////////////////////////////////////////////////////////////////////////////\n//\t\t\t\t\t\t\t\t\t\t//\n//////////////////////////////////////////////////////////////////////////////////\n\nVirtualJoystick.prototype.deltaX\t= function(){ return this._stickX - this._baseX;\t}\nVirtualJoystick.prototype.deltaY\t= function(){ return this._stickY - this._baseY;\t}\n\nVirtualJoystick.prototype.up\t= function(){\n\tif( this._pressed === false )\treturn false;\n\tvar deltaX\t= this.deltaX();\n\tvar deltaY\t= this.deltaY();\n\tif( deltaY >= 0 )\t\t\t\treturn false;\n\tif( Math.abs(deltaX) > 2*Math.abs(deltaY) )\treturn false;\n\treturn true;\n}\nVirtualJoystick.prototype.down\t= function(){\n\tif( this._pressed === false )\treturn false;\n\tvar deltaX\t= this.deltaX();\n\tvar deltaY\t= this.deltaY();\n\tif( deltaY <= 0 )\t\t\t\treturn false;\n\tif( Math.abs(deltaX) > 2*Math.abs(deltaY) )\treturn false;\n\treturn true;\t\n}\nVirtualJoystick.prototype.right\t= function(){\n\tif( this._pressed === false )\treturn false;\n\tvar deltaX\t= this.deltaX();\n\tvar deltaY\t= this.deltaY();\n\tif( deltaX <= 0 )\t\t\t\treturn false;\n\tif( Math.abs(deltaY) > 2*Math.abs(deltaX) )\treturn false;\n\treturn true;\t\n}\nVirtualJoystick.prototype.left\t= function(){\n\tif( this._pressed === false )\treturn false;\n\tvar deltaX\t= this.deltaX();\n\tvar deltaY\t= this.deltaY();\n\tif( deltaX >= 0 )\t\t\t\treturn false;\n\tif( Math.abs(deltaY) > 2*Math.abs(deltaX) )\treturn false;\n\treturn true;\t\n}\n\n//////////////////////////////////////////////////////////////////////////////////\n//\t\t\t\t\t\t\t\t\t\t//\n//////////////////////////////////////////////////////////////////////////////////\n\nVirtualJoystick.prototype._onUp\t= function()\n{\n\tthis._pressed\t= false; \n\tthis._stickEl.style.display\t= \"none\";\n\t\n\tif(this._stationaryBase == false){\t\n\t\tthis._baseEl.style.display\t= \"none\";\n\t\n\t\tthis._baseX\t= this._baseY\t= 0;\n\t\tthis._stickX\t= this._stickY\t= 0;\n\t}\n}\n\nVirtualJoystick.prototype._onDown\t= function(x, y)\n{\n\tthis._pressed\t= true; \n\tif(this._stationaryBase == false){\n\t\tthis._baseX\t= x;\n\t\tthis._baseY\t= y;\n\t\tthis._baseEl.style.display\t= \"\";\n\t\tthis._move(this._baseEl.style, (this._baseX - this._baseEl.width /2), (this._baseY - this._baseEl.height/2));\n\t}\n\t\n\tthis._stickX\t= x;\n\tthis._stickY\t= y;\n\t\n\tif(this._limitStickTravel === true){\n\t\tvar deltaX\t= this.deltaX();\n\t\tvar deltaY\t= this.deltaY();\n\t\tvar stickDistance = Math.sqrt( (deltaX * deltaX) + (deltaY * deltaY) );\n\t\tif(stickDistance > this._stickRadius){\n\t\t\tvar stickNormalizedX = deltaX / stickDistance;\n\t\t\tvar stickNormalizedY = deltaY / stickDistance;\n\t\t\t\n\t\t\tthis._stickX = stickNormalizedX * this._stickRadius + this._baseX;\n\t\t\tthis._stickY = stickNormalizedY * this._stickRadius + this._baseY;\n\t\t} \t\n\t}\n\t\n\tthis._stickEl.style.display\t= \"\";\n\tthis._move(this._stickEl.style, (this._stickX - this._stickEl.width /2), (this._stickY - this._stickEl.height/2));\t\n}\n\nVirtualJoystick.prototype._onMove\t= function(x, y)\n{\n\tif( this._pressed === true ){\n\t\tthis._stickX\t= x;\n\t\tthis._stickY\t= y;\n\t\t\n\t\tif(this._limitStickTravel === true){\n\t\t\tvar deltaX\t= this.deltaX();\n\t\t\tvar deltaY\t= this.deltaY();\n\t\t\tvar stickDistance = Math.sqrt( (deltaX * deltaX) + (deltaY * deltaY) );\n\t\t\tif(stickDistance > this._stickRadius){\n\t\t\t\tvar stickNormalizedX = deltaX / stickDistance;\n\t\t\t\tvar stickNormalizedY = deltaY / stickDistance;\n\t\t\t\n\t\t\t\tthis._stickX = stickNormalizedX * this._stickRadius + this._baseX;\n\t\t\t\tthis._stickY = stickNormalizedY * this._stickRadius + this._baseY;\n\t\t\t} \t\t\n\t\t}\n\t\t\n        \tthis._move(this._stickEl.style, (this._stickX - this._stickEl.width /2), (this._stickY - this._stickEl.height/2));\t\n\t}\t\n}\n\n\n//////////////////////////////////////////////////////////////////////////////////\n//\t\tbind touch events (and mouse events for debug)\t\t\t//\n//////////////////////////////////////////////////////////////////////////////////\n\nVirtualJoystick.prototype._onMouseUp\t= function(event)\n{\n\treturn this._onUp();\n}\n\nVirtualJoystick.prototype._onMouseDown\t= function(event)\n{\n\tevent.preventDefault();\n\tvar x\t= event.clientX;\n\tvar y\t= event.clientY;\n\treturn this._onDown(x, y);\n}\n\nVirtualJoystick.prototype._onMouseMove\t= function(event)\n{\n\tvar x\t= event.clientX;\n\tvar y\t= event.clientY;\n\treturn this._onMove(x, y);\n}\n\n//////////////////////////////////////////////////////////////////////////////////\n//\t\tcomment\t\t\t\t\t\t\t\t//\n//////////////////////////////////////////////////////////////////////////////////\n\nVirtualJoystick.prototype._onTouchStart\t= function(event)\n{\n\t// if there is already a touch inprogress do nothing\n\tif( this._touchIdx !== null )\treturn;\n\n\t// notify event for validation\n\tvar isValid\t= this.dispatchEvent('touchStartValidation', event);\n\tif( isValid === false )\treturn;\n\t\n\t// dispatch touchStart\n\tthis.dispatchEvent('touchStart', event);\n\n\tevent.preventDefault();\n\t// get the first who changed\n\tvar touch\t= event.changedTouches[0];\n\t// set the touchIdx of this joystick\n\tthis._touchIdx\t= touch.identifier;\n\n\t// forward the action\n\tvar x\t\t= touch.pageX;\n\tvar y\t\t= touch.pageY;\n\treturn this._onDown(x, y)\n}\n\nVirtualJoystick.prototype._onTouchEnd\t= function(event)\n{\n\t// if there is no touch in progress, do nothing\n\tif( this._touchIdx === null )\treturn;\n\n\t// dispatch touchEnd\n\tthis.dispatchEvent('touchEnd', event);\n\n\t// try to find our touch event\n\tvar touchList\t= event.changedTouches;\n\tfor(var i = 0; i < touchList.length && touchList[i].identifier !== this._touchIdx; i++);\n\t// if touch event isnt found, \n\tif( i === touchList.length)\treturn;\n\n\t// reset touchIdx - mark it as no-touch-in-progress\n\tthis._touchIdx\t= null;\n\n//??????\n// no preventDefault to get click event on ios\nevent.preventDefault();\n\n\treturn this._onUp()\n}\n\nVirtualJoystick.prototype._onTouchMove\t= function(event)\n{\n\t// if there is no touch in progress, do nothing\n\tif( this._touchIdx === null )\treturn;\n\n\t// try to find our touch event\n\tvar touchList\t= event.changedTouches;\n\tfor(var i = 0; i < touchList.length && touchList[i].identifier !== this._touchIdx; i++ );\n\t// if touch event with the proper identifier isnt found, do nothing\n\tif( i === touchList.length)\treturn;\n\tvar touch\t= touchList[i];\n\n\tevent.preventDefault();\n\n\tvar x\t\t= touch.pageX;\n\tvar y\t\t= touch.pageY;\n\treturn this._onMove(x, y)\n}\n\n\n//////////////////////////////////////////////////////////////////////////////////\n//\t\tbuild default stickEl and baseEl\t\t\t\t//\n//////////////////////////////////////////////////////////////////////////////////\n\n/**\n * build the canvas for joystick base\n */\nVirtualJoystick.prototype._buildJoystickBase\t= function()\n{\n\tvar canvas\t= document.createElement( 'canvas' );\n\tcanvas.width\t= 126;\n\tcanvas.height\t= 126;\n\t\n\tvar ctx\t\t= canvas.getContext('2d');\n\tctx.beginPath(); \n\tctx.strokeStyle = this._strokeStyle; \n\tctx.lineWidth\t= 6; \n\tctx.arc( canvas.width/2, canvas.width/2, 40, 0, Math.PI*2, true); \n\tctx.stroke();\t\n\n\tctx.beginPath(); \n\tctx.strokeStyle\t= this._strokeStyle; \n\tctx.lineWidth\t= 2; \n\tctx.arc( canvas.width/2, canvas.width/2, 60, 0, Math.PI*2, true); \n\tctx.stroke();\n\t\n\treturn canvas;\n}\n\n/**\n * build the canvas for joystick stick\n */\nVirtualJoystick.prototype._buildJoystickStick\t= function()\n{\n\tvar canvas\t= document.createElement( 'canvas' );\n\tcanvas.width\t= 86;\n\tcanvas.height\t= 86;\n\tvar ctx\t\t= canvas.getContext('2d');\n\tctx.beginPath(); \n\tctx.strokeStyle\t= this._strokeStyle; \n\tctx.lineWidth\t= 6; \n\tctx.arc( canvas.width/2, canvas.width/2, 40, 0, Math.PI*2, true); \n\tctx.stroke();\n\treturn canvas;\n}\n\n//////////////////////////////////////////////////////////////////////////////////\n//\t\tmove using translate3d method with fallback to translate > 'top' and 'left'\t\t\n//      modified from https://github.com/component/translate and dependents\n//////////////////////////////////////////////////////////////////////////////////\n\nVirtualJoystick.prototype._move = function(style, x, y)\n{\n\tif (this._transform) {\n\t\tif (this._has3d) {\n\t\t\tstyle[this._transform] = 'translate3d(' + x + 'px,' + y + 'px, 0)';\n\t\t} else {\n\t\t\tstyle[this._transform] = 'translate(' + x + 'px,' + y + 'px)';\n\t\t}\n\t} else {\n\t\tstyle.left = x + 'px';\n\t\tstyle.top = y + 'px';\n\t}\n}\n\nVirtualJoystick.prototype._getTransformProperty = function() \n{\n\tvar styles = [\n\t\t'webkitTransform',\n\t\t'MozTransform',\n\t\t'msTransform',\n\t\t'OTransform',\n\t\t'transform'\n\t];\n\n\tvar el = document.createElement('p');\n\tvar style;\n\n\tfor (var i = 0; i < styles.length; i++) {\n\t\tstyle = styles[i];\n\t\tif (null != el.style[style]) {\n\t\t\treturn style;\n\t\t}\n\t}         \n}\n  \nVirtualJoystick.prototype._check3D = function() \n{        \n\tvar prop = this._getTransformProperty();\n\t// IE8<= doesn't have `getComputedStyle`\n\tif (!prop || !window.getComputedStyle) return module.exports = false;\n\n\tvar map = {\n\t\twebkitTransform: '-webkit-transform',\n\t\tOTransform: '-o-transform',\n\t\tmsTransform: '-ms-transform',\n\t\tMozTransform: '-moz-transform',\n\t\ttransform: 'transform'\n\t};\n\n\t// from: https://gist.github.com/lorenzopolidori/3794226\n\tvar el = document.createElement('div');\n\tel.style[prop] = 'translate3d(1px,1px,1px)';\n\tdocument.body.insertBefore(el, null);\n\tvar val = getComputedStyle(el).getPropertyValue(map[prop]);\n\tdocument.body.removeChild(el);\n\tvar exports = null != val && val.length && 'none' != val;\n\treturn exports;\n}\n";
 
+
 // Struct for tasks
 struct task
 {
@@ -97,6 +105,9 @@ task taskA = {.rate = 300, .previous = 0};      // 500 ms
 String sta_ssid = "Kidbuild CAM Server";     // set Wifi network you want to connect to
 String sta_password = "";   // STA Password
 
+// Firmware version
+String FW_VERSION = "1.3";
+
 /* Wifi fixed settings in STA-Mode */
 IPAddress local_IP(192, 168, 4, 1);
 IPAddress gateway(192, 168, 4, 1);
@@ -106,6 +117,7 @@ unsigned long previousMillis = 0;
 
 AsyncWebServer server(80);
 
+// Gyro routine
 void initMPU6050() {
   MPU6050_setup();
   delay(500);
@@ -179,50 +191,92 @@ void handleJSData(AsyncWebServerRequest *request) {
   // Calculate Forward/Backward Left/Right
   if (xpos == 0 ) {
     OSCfader[1] = 0.5;
-  } else if ((xpos > 1) && (xpos < 21)) {
+  } else if ((xpos > 1) && (xpos < 11)) {
+    OSCfader[1] = 0.55;
+  } else if ((xpos > 11) && (xpos < 21)) {
     OSCfader[1] = 0.6;
-  } else if ((xpos > 20) && (xpos < 41)) {
+  } else if ((xpos > 21) && (xpos < 31)) {
+    OSCfader[1] = 0.65;
+  } else if ((xpos > 31) && (xpos < 41)) {
     OSCfader[1] = 0.7;
-  } else if ((xpos > 40) && (xpos < 61)) {
-    OSCfader[1] = 0.8;
-  } else if ((xpos > 60) && (xpos < 81)) {
+  } else if ((xpos > 41) && (xpos < 51)) {
+    OSCfader[1] = 0.75;
+  } else if ((xpos > 51) && (xpos < 61)) {
+    OSCfader[1] = 0.8;  
+  } else if ((xpos > 61) && (xpos < 71)) {
+    OSCfader[1] = 0.85;
+  } else if ((xpos > 71) && (xpos < 81)) {
     OSCfader[1] = 0.9;
-  } else if ((xpos > 80) && (xpos < 101)) {
+  } else if ((xpos > 81) && (xpos < 91)) {
+    OSCfader[1] = 0.95;
+  } else if ((xpos > 91) && (xpos < 101)) {
     OSCfader[1] = 1.0;
-  } else if ((xpos < 0) && (xpos > -21)) {
+
+  } else if ((xpos < 0) && (xpos > -11)) {
+    OSCfader[1] = 0.475;
+  } else if ((xpos > -10) && (xpos > -21)) {
+    OSCfader[1] = 0.45;
+  } else if ((xpos > -20) && (xpos > -31)) {
+    OSCfader[1] = 0.425;
+  } else if ((xpos > -30) && (xpos > -41)) {
     OSCfader[1] = 0.4;
-  } else if ((xpos > -20) && (xpos > -41)) {
+  } else if ((xpos > -40) && (xpos > -51)) {
+    OSCfader[1] = 0.375;
+  } else if ((xpos > -50) && (xpos > -61)) {
+    OSCfader[1] = 0.35;
+  } else if ((xpos > -60) && (xpos > -71)) {
+    OSCfader[1] = 0.325;
+  } else if ((xpos > -70) && (xpos > -81)) {
     OSCfader[1] = 0.3;
-  } else if ((xpos > -40) && (xpos > -61)) {
-    OSCfader[1] = 0.2;
-  } else if ((xpos > -60) && (xpos > -81)) {
-    OSCfader[1] = 0.1;
-  } else if ((xpos > -80) && (xpos > -101)) {
-    OSCfader[1] = 0.0;
-  } 
+  } else if ((xpos > -80) && (xpos > -91)) {
+    OSCfader[1] = 0.275;
+  } else if ((xpos > -90) && (xpos > -101)) {
+    OSCfader[1] = 0.25;
+  }
 
 if (ypos == 0 ) {
     OSCfader[0] = 0.5;
-  } else if ((ypos > 1) && (ypos < 21)) {
+  } else if ((ypos > 1) && (ypos < 11)) {
+    OSCfader[0] = 0.525;
+  } else if ((ypos > 11) && (ypos < 21)) {
+    OSCfader[0] = 0.55;
+  } else if ((ypos > 21) && (ypos < 31)) {
+    OSCfader[0] = 0.575;
+  } else if ((ypos > 31) && (ypos < 41)) {
     OSCfader[0] = 0.6;
-  } else if ((ypos > 20) && (ypos < 41)) {
+  } else if ((ypos > 41) && (ypos < 51)) {
+    OSCfader[0] = 0.625;
+  } else if ((ypos > 51) && (ypos < 61)) {
+    OSCfader[0] = 0.65;  
+  } else if ((ypos > 61) && (ypos < 71)) {
+    OSCfader[0] = 0.675;
+  } else if ((ypos > 71) && (ypos < 81)) {
     OSCfader[0] = 0.7;
-  } else if ((ypos > 40) && (ypos < 61)) {
-    OSCfader[0] = 0.8;
-  } else if ((ypos > 60) && (ypos < 81)) {
-    OSCfader[0] = 0.9;
-  } else if ((ypos > 80) && (ypos < 101)) {
-    OSCfader[0] = 1.0;
-  } else if ((ypos < 0) && (ypos > -21)) {
+  } else if ((ypos > 81) && (ypos < 91)) {
+    OSCfader[0] = 0.725;
+  } else if ((ypos > 91) && (ypos < 101)) {
+    OSCfader[0] = 0.75;
+
+  } else if ((ypos < 0) && (ypos > -11)) {
+    OSCfader[0] = 0.475;
+  } else if ((ypos > -10) && (ypos > -21)) {
+    OSCfader[0] = 0.45;
+  } else if ((ypos > -20) && (ypos > -31)) {
+    OSCfader[0] = 0.425;
+  } else if ((ypos > -30) && (ypos > -41)) {
     OSCfader[0] = 0.4;
-  } else if ((ypos > -20) && (ypos > -41)) {
+  } else if ((ypos > -40) && (ypos > -51)) {
+    OSCfader[0] = 0.375;
+  } else if ((ypos > -50) && (ypos > -61)) {
+    OSCfader[0] = 0.35;
+  } else if ((ypos > -60) && (ypos > -71)) {
+    OSCfader[0] = 0.325;
+  } else if ((ypos > -70) && (ypos > -81)) {
     OSCfader[0] = 0.3;
-  } else if ((ypos > -40) && (ypos > -61)) {
-    OSCfader[0] = 0.2;
-  } else if ((ypos > -60) && (ypos > -81)) {
-    OSCfader[0] = 0.1;
-  } else if ((ypos > -80) && (ypos > -101)) {
-    OSCfader[0] = 0.0;
+  } else if ((ypos > -80) && (ypos > -91)) {
+    OSCfader[0] = 0.275;
+  } else if ((ypos > -90) && (ypos > -101)) {
+    OSCfader[0] = 0.25;
   } 
 
   //return an HTTP 200
@@ -240,7 +294,6 @@ void setup() {
   Serial.println();
   Serial.println("*Kidbuild Balancing Robot*");
   Serial.println("--------------------------------------------------------");
-
 
   pinMode(PIN_ENABLE_MOTORS, OUTPUT);
   digitalWrite(PIN_ENABLE_MOTORS, HIGH);
@@ -275,8 +328,6 @@ void setup() {
 
   Serial.println();
   Serial.println("Hostname: "+hostname);
-
-  
      
   // Configures static IP address
   if (!WiFi.config(local_IP, gateway, subnet)) {
@@ -422,6 +473,9 @@ void setup() {
     request->send(200, "text/text", "");
   });
 
+  //Update through vebview
+	
+
   server.on("/web/jsData.html", handleJSData);  
   server.on("/web/joystick.html",handleJoystickHtml);
   server.on("/web/virtualjoystick.js",handleVirtualJoystickJS);
@@ -430,9 +484,9 @@ void setup() {
   server.on("/web/function3.html",handleFunktion3);
   server.on("/web", handleJoystickHtml);
 
-  server.onNotFound (notFound);    // when a client requests an unknown URI (i.e. something other than "/"), call function "handleNotFound"
-  //AsyncElegantOTA.begin(&server);   // adding OTA via web-upload with http://192.168.4.1/update
-  server.begin();                           // actually start the server
+  server.onNotFound (notFound);     // when a client requests an unknown URI (i.e. something other than "/"), call function "handleNotFound"
+  AsyncElegantOTA.begin(&server);   // adding OTA via web-upload with http://192.168.4.1/update
+  server.begin();                   // actually start the server
 
   initTimers();
 

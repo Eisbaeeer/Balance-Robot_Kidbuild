@@ -49,10 +49,10 @@
 
 #define ANGLE_OFFSET 0.0  // Offset angle for balance (to compensate robot own weight distribution)
 
-// Servo definitions
+// Servo definitions        max range of servo is 8400
 #define SERVO_AUX_NEUTRO 4444  // Servo neutral position
-#define SERVO_MIN_PULSEWIDTH SERVO_AUX_NEUTRO - 2700
-#define SERVO_MAX_PULSEWIDTH SERVO_AUX_NEUTRO + 2700
+#define SERVO_MIN_PULSEWIDTH SERVO_AUX_NEUTRO - 3000        //back
+#define SERVO_MAX_PULSEWIDTH SERVO_AUX_NEUTRO + 4000        //front
 
 #define SERVO2_NEUTRO 4444
 #define SERVO2_RANGE 8400
