@@ -89,6 +89,15 @@ You will find all STL files and addons in the STL folder. Typically printed with
 ![Logo](pics/pic3.jpg)
 ![Logo](pics/camera.jpg)
 
+## How to flash
+1. Donwload ESP flasher tool. E.g.: https://github.com/Jason2866/ESP_Flasher/releases
+2. Download firmware.bin from release page: https://github.com/Eisbaeeer/Balance-Robot_Kidbuild/releases
+
+## How to update via webUpdate
+1. Connect to robot via Wifi
+2. Open http://192.168.4.1/update
+3. Upload firmware.bin from release page: https://github.com/Eisbaeeer/Balance-Robot_Kidbuild/releases 
+
 ## How to compile
 1. Install VS-Code
 2. Install addon platformio
@@ -96,17 +105,21 @@ You will find all STL files and addons in the STL folder. Typically printed with
 4. open repository in VS-Code
 4. Compile
 
-
 ## Weblinks to get running
 - http://www.kidbuild.de or https://shop.kidbuild.de
 E-Mail info@kidbuild.de
 
 ## Changelog 
 
+ ### Verison 1.3
+    Date: 20220703
+    - Added OTA firmware web update
+    - Optimized web control
+
 ### Version 1.2
 	Date: 20220627
 	- Added joystick via browser
-	- Added background live view with esp32-came
+	- Added background live view with esp32-camera
 	- Added light, sound, servo control
 
 ### Version 1.0
