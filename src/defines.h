@@ -40,7 +40,7 @@
 // Control gains for raiseup (the raiseup movement requiere special control parameters)
 #define KP_RAISEUP 0.1
 #define KD_RAISEUP 0.16
-#define KP_THROTTLE_RAISEUP 0   // No speed control on raiseup
+#define KP_THROTTLE_RAISEUP 0.0   // No speed control on raiseup
 #define KI_THROTTLE_RAISEUP 0.0
 
 #define MAX_CONTROL_OUTPUT 500
@@ -51,7 +51,7 @@
 
 // Servo definitions        max range of servo is 8400
 #define SERVO_AUX_NEUTRO 4444  // Servo neutral position
-#define SERVO_MIN_PULSEWIDTH SERVO_AUX_NEUTRO - 3000        //back
+#define SERVO_MIN_PULSEWIDTH SERVO_AUX_NEUTRO - 3300        //back  
 #define SERVO_MAX_PULSEWIDTH SERVO_AUX_NEUTRO + 4000        //front
 
 #define SERVO2_NEUTRO 4444
