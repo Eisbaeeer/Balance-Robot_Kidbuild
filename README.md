@@ -98,6 +98,8 @@ You will find all STL files and addons in the STL folder. Typically printed with
 - Button A = servo
 - Controll via gyro by pressing the B button
 
+![Logo](pics/Wii-Remote.jpg)
+
 ## How to flash
 1. Donwload ESP flasher tool. E.g.: https://github.com/Jason2866/ESP_Flasher/releases
 2. Download firmware.bin from release page: https://github.com/Eisbaeeer/Balance-Robot_Kidbuild/releases
