@@ -89,6 +89,15 @@ You will find all STL files and addons in the STL folder. Typically printed with
 ![Logo](pics/pic3.jpg)
 ![Logo](pics/camera.jpg)
 
+## Wii Remote control
+- Connect the Wii-Remote by pressing button 1 + 2 in same time
+- Wii is connected, if LED one on Wii lit
+- Hold the controller horizontal
+- Button 1 = piezo
+- Button 2 = eyes
+- Button A = servo
+- Controll via gyro by pressing the B button
+
 ## How to flash
 1. Donwload ESP flasher tool. E.g.: https://github.com/Jason2866/ESP_Flasher/releases
 2. Download firmware.bin from release page: https://github.com/Eisbaeeer/Balance-Robot_Kidbuild/releases
@@ -111,7 +120,11 @@ E-Mail info@kidbuild.de
 
 ## Changelog 
 
- ### Verison 1.3
+### Version 1.4
+    Date: 20220727
+    - Added Wii-Remote as remote controller
+
+### Verison 1.3
     Date: 20220703
     - Added OTA firmware web update
     - Optimized web control

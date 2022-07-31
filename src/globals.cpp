@@ -95,3 +95,6 @@ uint8_t OSCmove_mode;
 int16_t OSCmove_speed;
 int16_t OSCmove_steps1;
 int16_t OSCmove_steps2;
+
+// helper variables
+boolean action = true;

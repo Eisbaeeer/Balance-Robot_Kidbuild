@@ -4,6 +4,10 @@
  * 
  *  Changelog:
  * 
+ *  ### Version 1.4
+ *  (20220727)
+ *  - Added Wii-Remote as remote controller (pressing key 1 + 2 on same time to connect the Wii Remote)
+ * 
  *  ### Verison 1.3
  *  (20220703)
  *  - Added OTA firmware web update
@@ -54,6 +58,14 @@
  * P-Speed              /?fader5=0.00-1.00
  * I-Speed              /?fader6=0.00-1.00
  * 
+ * Controll via Wii-Remote controller
+ * - Connect to robot = press 1+2 same time
+ * - Button 1         = piezo
+ * - Button 2         = light
+ * - Home             = toggle mode pro (pro mode lights blinking)
+ * - Control via gyro = press B button + gyro move to go forward/backward right/left.
+ *                      hold controller crosswise
+ * 
  */
  
 #include <Wire.h>
@@ -74,6 +86,7 @@
 #include "driver/timer.h"
 #include "driver/ledc.h"
 #include "esp32-hal-ledc.h"
+#include "ESP32Wiimote.h"
 
 
 const char* PARAM_FADER1 = "fader1";
@@ -99,7 +112,13 @@ struct task
     unsigned long previous;
 };
 
-task taskA = {.rate = 300, .previous = 0};      // 500 ms
+task taskA = {.rate = 500, .previous = 0};      // 500 ms
+
+/* Wii-Remote*/
+ESP32Wiimote wiimote;
+static bool logging = false;
+static long last_ms = 0;
+static int num_run = 0, num_updates = 0;
 
 /* Wifi Crdentials */
 String sta_ssid = "Kidbuild CAM Server";     // set Wifi network you want to connect to
@@ -128,12 +147,6 @@ void initTimers();
 
 void playsound() {
   digitalWrite(PIN_BUZZER, HIGH);
-  delay(150);
-  digitalWrite(PIN_BUZZER, LOW);
-  delay(80);
-  digitalWrite(PIN_BUZZER, HIGH);
-  delay(150);
-  digitalWrite(PIN_BUZZER, LOW);
 }
 
 void notFound(AsyncWebServerRequest *request) {
@@ -212,26 +225,26 @@ void handleJSData(AsyncWebServerRequest *request) {
   } else if ((xpos > 91) && (xpos < 101)) {
     OSCfader[1] = 1.0;
 
-  } else if ((xpos < 0) && (xpos > -11)) {
-    OSCfader[1] = 0.475;
-  } else if ((xpos > -10) && (xpos > -21)) {
+  } else if ((xpos < 1) && (xpos > -11)) {
     OSCfader[1] = 0.45;
-  } else if ((xpos > -20) && (xpos > -31)) {
-    OSCfader[1] = 0.425;
-  } else if ((xpos > -30) && (xpos > -41)) {
+  } else if ((xpos > -10) && (xpos > -21)) {
     OSCfader[1] = 0.4;
-  } else if ((xpos > -40) && (xpos > -51)) {
-    OSCfader[1] = 0.375;
-  } else if ((xpos > -50) && (xpos > -61)) {
+  } else if ((xpos > -20) && (xpos > -31)) {
     OSCfader[1] = 0.35;
-  } else if ((xpos > -60) && (xpos > -71)) {
-    OSCfader[1] = 0.325;
-  } else if ((xpos > -70) && (xpos > -81)) {
+  } else if ((xpos > -30) && (xpos > -41)) {
     OSCfader[1] = 0.3;
-  } else if ((xpos > -80) && (xpos > -91)) {
-    OSCfader[1] = 0.275;
-  } else if ((xpos > -90) && (xpos > -101)) {
+  } else if ((xpos > -40) && (xpos > -51)) {
     OSCfader[1] = 0.25;
+  } else if ((xpos > -50) && (xpos > -61)) {
+    OSCfader[1] = 0.2;
+  } else if ((xpos > -60) && (xpos > -71)) {
+    OSCfader[1] = 0.15;
+  } else if ((xpos > -70) && (xpos > -81)) {
+    OSCfader[1] = 0.1;
+  } else if ((xpos > -80) && (xpos > -91)) {
+    OSCfader[1] = 0.05;
+  } else if ((xpos > -90) && (xpos > -101)) {
+    OSCfader[1] = 0.0;
   }
 
 if (ypos == 0 ) {
@@ -321,6 +334,14 @@ void setup() {
   Wire.begin();
   initMPU6050();
 
+  /* Wii-Remote init */
+  wiimote.init();
+  if (! logging)
+        // wiimote.addFilter(ACTION_IGNORE, FILTER_ACCEL); // optional - uncomment this will filter all acclerations!
+    
+    Serial.println("Wii-init done!");
+    last_ms = millis();
+
   // Set NodeMCU Wifi hostname based on chip mac address
   char chip_id[15];
   snprintf(chip_id, 15, "%04X", (uint16_t)(ESP.getEfuseMac()>>32));
@@ -360,8 +381,7 @@ void setup() {
     Serial.print("IP: ");
     myIP=WiFi.localIP();
     Serial.println(myIP);
-    digitalWrite(PIN_WIFI_LED, HIGH);    // Wifi LED on when connected to Wifi as STA mode
-    delay(2000);
+    delay(1000);
   } else {
     WiFi.mode(WIFI_AP);
     WiFi.softAP(hostname.c_str());
@@ -372,8 +392,7 @@ void setup() {
     Serial.println("*WiFi-AP-Mode*");
     Serial.print("AP IP address: ");
     Serial.println(myIP);
-    digitalWrite(PIN_WIFI_LED, LOW);   // Wifi LED off when status as AP mode
-    delay(2000);
+    delay(1000);
   }
 
 
@@ -603,19 +622,295 @@ void loop() {
   //task A
     if (taskA.previous == 0 || (millis() - taskA.previous > taskA.rate)) {
         taskA.previous = millis(); 
-        // 300 ms
+        // 500 ms
+        
         if (fromWeb) {
           fromWeb == 0;
           if (OSCpush[0]) {
             OSCpush[0]=0;
           }
         }
+        action = true;  // debounce actions
+        digitalWrite(PIN_WIFI_LED, LOW);
+
+        // blinking eyes during PRO MODE
+        if (OSCtoggle[0] == 1) {
+            digitalWrite(PIN_LED, !digitalRead(PIN_LED));
+        }
+
+        digitalWrite(PIN_BUZZER, LOW);        // Buzzer off
     }
 
   if (OSCnewMessage) {
     OSCnewMessage = 0;
     processOSCMsg();
   }
+
+  /* Wii-Remote */
+  wiimote.task();
+    num_run++;
+
+    if (wiimote.available() > 0) 
+    {
+        ButtonState  button  = wiimote.getButtonState();
+        AccelState   accel   = wiimote.getAccelState();
+        NunchukState nunchuk = wiimote.getNunchukState();
+
+        num_updates++;
+
+        /* process buttons from Wii */
+        
+        // Servo
+        if (button & BUTTON_A) {
+          if (action) { 
+            taskA.previous = millis();
+            action = false;
+            fromWeb = 1;
+            OSCpage = 1;
+            OSCpush[0]=1;
+            digitalWrite(PIN_WIFI_LED, HIGH);
+          }
+        }
+        if (button & BUTTON_ONE) {
+            // toggle need
+          if (action) {  
+            taskA.previous = millis();
+            action = false;
+            playsound();
+            digitalWrite(PIN_WIFI_LED, HIGH);
+          }
+        }
+        if (button & BUTTON_TWO) {
+            // toggle need
+          if (action) { 
+            taskA.previous = millis(); 
+            action = false;
+            digitalWrite(PIN_LED, !digitalRead(PIN_LED));
+            digitalWrite(PIN_WIFI_LED, HIGH);
+          }
+        }
+        // Switch ProMode
+        if (button & BUTTON_HOME) {
+            // toggle need         
+          if (action) { 
+            taskA.previous = millis(); 
+            action = false;
+            if (OSCtoggle[0] == 1) {
+                OSCtoggle[0] = 0;
+            } else {
+                OSCtoggle[0] = 1;
+            }
+            digitalWrite(PIN_WIFI_LED, HIGH);
+          }
+        }
+
+        // Calculate Forward/Backward Left/Right
+  
+      if (button & BUTTON_B) {
+        digitalWrite(PIN_WIFI_LED, HIGH);
+
+        switch (accel.xAxis) {
+          case 98: OSCfader[0] = 0.175; break;
+          case 99: OSCfader[0] = 0.175; break;
+          case 100: OSCfader[0] = 0.2; break;
+          case 101: OSCfader[0] = 0.2; break;
+          case 102: OSCfader[0] = 0.225; break;
+          case 103: OSCfader[0] = 0.225; break;
+          case 104: OSCfader[0] = 0.25; break;
+          case 105: OSCfader[0] = 0.25; break;
+          case 106: OSCfader[0] = 0.275; break;
+          case 107: OSCfader[0] = 0.275; break;
+          case 108: OSCfader[0] = 0.3; break;
+          case 109: OSCfader[0] = 0.3; break;
+          case 110: OSCfader[0] = 0.325; break;
+          case 111: OSCfader[0] = 0.325; break;
+          case 112: OSCfader[0] = 0.35; break;
+          case 113: OSCfader[0] = 0.35; break;
+          case 114: OSCfader[0] = 0.375; break;
+          case 115: OSCfader[0] = 0.375; break;
+          case 116: OSCfader[0] = 0.4; break;
+          case 117: OSCfader[0] = 0.4; break;
+          case 118: OSCfader[0] = 0.425; break;
+          case 119: OSCfader[0] = 0.425; break;
+          case 120: OSCfader[0] = 0.45; break;
+          case 121: OSCfader[0] = 0.45; break;
+          case 122: OSCfader[0] = 0.475; break;
+          case 123: OSCfader[0] = 0.475; break;       
+          case 124: OSCfader[0] = 0.5; break;
+          case 125: OSCfader[0] = 0.525; break;
+          case 126: OSCfader[0] = 0.525; break;
+          case 127: OSCfader[0] = 0.55; break;
+          case 128: OSCfader[0] = 0.55; break;
+          case 129: OSCfader[0] = 0.6; break;
+          case 130: OSCfader[0] = 0.6; break;
+          case 131: OSCfader[0] = 0.625; break;
+          case 132: OSCfader[0] = 0.625; break;
+          case 133: OSCfader[0] = 0.65; break;
+          case 134: OSCfader[0] = 0.65; break;
+          case 135: OSCfader[0] = 0.675; break;
+          case 136: OSCfader[0] = 0.675; break;
+          case 137: OSCfader[0] = 0.7; break;
+          case 138: OSCfader[0] = 0.7; break;
+          case 139: OSCfader[0] = 0.725; break;
+          case 140: OSCfader[0] = 0.725; break;
+          case 141: OSCfader[0] = 0.75; break;
+          case 142: OSCfader[0] = 0.75; break;
+          case 143: OSCfader[0] = 0.775; break;
+          case 144: OSCfader[0] = 0.775; break;
+          case 145: OSCfader[0] = 0.8; break;
+          case 146: OSCfader[0] = 0.8; break;
+          case 147: OSCfader[0] = 0.825; break;
+          case 148: OSCfader[0] = 0.825; break;
+        }
+
+      switch (accel.xAxis) {
+          case 98: OSCfader[0] = 0.175; break;
+          case 99: OSCfader[0] = 0.175; break;
+          case 100: OSCfader[0] = 0.2; break;
+          case 101: OSCfader[0] = 0.2; break;
+          case 102: OSCfader[0] = 0.225; break;
+          case 103: OSCfader[0] = 0.225; break;
+          case 104: OSCfader[0] = 0.25; break;
+          case 105: OSCfader[0] = 0.25; break;
+          case 106: OSCfader[0] = 0.275; break;
+          case 107: OSCfader[0] = 0.275; break;
+          case 108: OSCfader[0] = 0.3; break;
+          case 109: OSCfader[0] = 0.3; break;
+          case 110: OSCfader[0] = 0.325; break;
+          case 111: OSCfader[0] = 0.325; break;
+          case 112: OSCfader[0] = 0.35; break;
+          case 113: OSCfader[0] = 0.35; break;
+          case 114: OSCfader[0] = 0.375; break;
+          case 115: OSCfader[0] = 0.375; break;
+          case 116: OSCfader[0] = 0.4; break;
+          case 117: OSCfader[0] = 0.4; break;
+          case 118: OSCfader[0] = 0.425; break;
+          case 119: OSCfader[0] = 0.425; break;
+          case 120: OSCfader[0] = 0.45; break;
+          case 121: OSCfader[0] = 0.45; break;
+          case 122: OSCfader[0] = 0.475; break;
+          case 123: OSCfader[0] = 0.475; break;       
+          case 124: OSCfader[0] = 0.5; break;
+          case 125: OSCfader[0] = 0.525; break;
+          case 126: OSCfader[0] = 0.525; break;
+          case 127: OSCfader[0] = 0.55; break;
+          case 128: OSCfader[0] = 0.55; break;
+          case 129: OSCfader[0] = 0.6; break;
+          case 130: OSCfader[0] = 0.6; break;
+          case 131: OSCfader[0] = 0.625; break;
+          case 132: OSCfader[0] = 0.625; break;
+          case 133: OSCfader[0] = 0.65; break;
+          case 134: OSCfader[0] = 0.65; break;
+          case 135: OSCfader[0] = 0.675; break;
+          case 136: OSCfader[0] = 0.675; break;
+          case 137: OSCfader[0] = 0.7; break;
+          case 138: OSCfader[0] = 0.7; break;
+          case 139: OSCfader[0] = 0.725; break;
+          case 140: OSCfader[0] = 0.725; break;
+          case 141: OSCfader[0] = 0.75; break;
+          case 142: OSCfader[0] = 0.75; break;
+          case 143: OSCfader[0] = 0.775; break;
+          case 144: OSCfader[0] = 0.775; break;
+          case 145: OSCfader[0] = 0.8; break;
+          case 146: OSCfader[0] = 0.8; break;
+          case 147: OSCfader[0] = 0.825; break;
+          case 148: OSCfader[0] = 0.825; break;
+        }
+switch (accel.yAxis) {
+          case 98: OSCfader[1] = 1.0; break;
+          case 99: OSCfader[1] = 1.0; break;
+          case 100: OSCfader[1] = 1.0; break;
+          case 101: OSCfader[1] = 1.0; break;
+          case 102: OSCfader[1] = 1.0; break;
+          case 103: OSCfader[1] = 1.0; break;
+          case 104: OSCfader[1] = 1.0; break;
+          case 105: OSCfader[1] = 0.975; break;
+          case 106: OSCfader[1] = 0.95; break;
+          case 107: OSCfader[1] = 0.925; break;
+          case 108: OSCfader[1] = 0.9; break;
+          case 109: OSCfader[1] = 0.875; break;
+          case 110: OSCfader[1] = 0.85; break;
+          case 111: OSCfader[1] = 0.825; break;
+          case 112: OSCfader[1] = 0.8; break;
+          case 113: OSCfader[1] = 0.775; break;
+          case 114: OSCfader[1] = 0.75; break;
+          case 115: OSCfader[1] = 0.725; break;
+          case 116: OSCfader[1] = 0.7; break;
+          case 117: OSCfader[1] = 0.675; break;
+          case 118: OSCfader[1] = 0.65; break;
+          case 119: OSCfader[1] = 0.625; break;
+          case 120: OSCfader[1] = 0.6; break;
+          case 121: OSCfader[1] = 0.575; break;
+          case 122: OSCfader[1] = 0.55; break;
+          case 123: OSCfader[1] = 0.525; break;       
+          case 124: OSCfader[1] = 0.5; break;
+          case 125: OSCfader[1] = 0.475; break;
+          case 126: OSCfader[1] = 0.45; break;
+          case 127: OSCfader[1] = 0.425; break;
+          case 128: OSCfader[1] = 0.4; break;
+          case 129: OSCfader[1] = 0.375; break;
+          case 130: OSCfader[1] = 0.35; break;
+          case 131: OSCfader[1] = 0.325; break;
+          case 132: OSCfader[1] = 0.3; break;
+          case 133: OSCfader[1] = 0.275; break;
+          case 134: OSCfader[1] = 0.25; break;
+          case 135: OSCfader[1] = 0.225; break;
+          case 136: OSCfader[1] = 0.2; break;
+          case 137: OSCfader[1] = 0.175; break;
+          case 138: OSCfader[1] = 0.15; break;
+          case 139: OSCfader[1] = 0.125; break;
+          case 140: OSCfader[1] = 0.1; break;
+          case 141: OSCfader[1] = 0.75; break;
+          case 142: OSCfader[1] = 0.5; break;
+          case 143: OSCfader[1] = 0.25; break;
+          case 144: OSCfader[1] = 0.0; break;
+          case 145: OSCfader[1] = 0.0; break;
+          case 146: OSCfader[1] = 0.0; break;
+          case 147: OSCfader[1] = 0.0; break;
+          case 148: OSCfader[1] = 0.0; break;
+        }
+
+        
+
+      } else {
+        OSCfader[0] = 0.5;
+        OSCfader[1] = 0.5;
+      }
+
+        // New Message flag
+        OSCnewMessage = 1;
+        OSCpage = 1; 
+
+        if (logging)
+        {       
+        Serial.print(F("forward/back: "));
+        Serial.print(OSCfader[1]);
+        Serial.print(F(" : "));
+        Serial.print(F("X-Axis: "));
+        Serial.println(accel.xAxis);
+        
+        Serial.print(F("Y-Axis: "));
+        Serial.print(accel.yAxis);
+        Serial.print(F(" : "));
+        Serial.print(F("left/right: "));
+        Serial.println(OSCfader[0]);
+        }    
+
+    /***
+    if (! logging)
+    {
+        long ms = millis();
+        if (ms - last_ms >= 1000)
+        {
+            Serial.printf("Run %d times per second with %d updates\n", num_run, num_updates);
+            num_run = num_updates = 0;
+            last_ms += 1000;
+        }
+    }
+    ***/
+
+  }
+  /* Wii-Remote END */
 
   timer_value = micros();
 
