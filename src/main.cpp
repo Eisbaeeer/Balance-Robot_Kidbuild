@@ -114,6 +114,11 @@ struct task
 
 task taskA = {.rate = 500, .previous = 0};      // 500 ms
 
+/* Piezo  */
+const int channel = 0;
+const int frequenz = 2000;
+const int resolutionBits = 12;
+
 /* Wii-Remote*/
 ESP32Wiimote wiimote;
 static bool logging = false;
@@ -325,6 +330,13 @@ void setup() {
   
   pinMode(PIN_BUZZER, OUTPUT);
   digitalWrite(PIN_BUZZER, LOW);
+  ledcSetup(channel, frequenz, resolutionBits);
+  ledcAttachPin(PIN_BUZZER, channel);
+  ledcWriteTone(channel, 600);
+  delay(50);
+  ledcWriteTone(channel, 800);
+  delay(50);
+  ledcWriteTone(channel, 0);
 
   ledcSetup(6, 50, 16); // channel 6, 50 Hz, 16-bit width
   ledcAttachPin(PIN_SERVO, 6);   // GPIO 22 assigned to channel 1
