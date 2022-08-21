@@ -24,6 +24,9 @@ extern uint8_t slow_loop_counter;  // slow loop 2Hz
 extern uint8_t sendBattery_counter; // To send battery status
 extern int16_t BatteryValue;
 
+extern int16_t wifiSeconds;
+extern bool wifiTimeout;
+
 extern long timer_old;
 extern long timer_value;
 extern float debugVariable;

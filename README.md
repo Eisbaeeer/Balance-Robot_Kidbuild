@@ -122,6 +122,11 @@ E-Mail info@kidbuild.de
 
 ## Changelog 
 
+### Version 1.5
+    Date: 20220819
+    - Added passive buzzer support
+    - Robot waiting 45 seconds for Wifi connection. After that the robot will disable Wifi and switch to Wii-remote bluetooth
+
 ### Version 1.4
     Date: 20220727
     - Added Wii-Remote as remote controller

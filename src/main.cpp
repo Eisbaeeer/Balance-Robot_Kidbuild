@@ -113,6 +113,7 @@ struct task
 };
 
 task taskA = {.rate = 500, .previous = 0};      // 500 ms
+task taskB = {.rate = 1000, .previous = 0};      // 1 second
 
 /* Piezo  */
 const int channel = 0;
@@ -151,7 +152,7 @@ void initMPU6050() {
 void initTimers();
 
 void playsound() {
-  digitalWrite(PIN_BUZZER, HIGH);
+  ledcWriteTone(channel, 100);
 }
 
 void notFound(AsyncWebServerRequest *request) {
@@ -328,16 +329,16 @@ void setup() {
   pinMode(PIN_WIFI_LED, OUTPUT);
   digitalWrite(PIN_WIFI_LED, LOW);
   
+  // set buzzer to pwm to generate tone for passive buzzers
   pinMode(PIN_BUZZER, OUTPUT);
   digitalWrite(PIN_BUZZER, LOW);
   ledcSetup(channel, frequenz, resolutionBits);
   ledcAttachPin(PIN_BUZZER, channel);
-  ledcWriteTone(channel, 600);
-  delay(50);
-  ledcWriteTone(channel, 800);
-  delay(50);
+  ledcWriteTone(channel, 50);
+  delay(100);
   ledcWriteTone(channel, 0);
 
+  // Servo
   ledcSetup(6, 50, 16); // channel 6, 50 Hz, 16-bit width
   ledcAttachPin(PIN_SERVO, 6);   // GPIO 22 assigned to channel 1
   delay(50);
@@ -643,27 +644,44 @@ void loop() {
           }
         }
         action = true;  // debounce actions
-        digitalWrite(PIN_WIFI_LED, LOW);
 
         // blinking eyes during PRO MODE
         if (OSCtoggle[0] == 1) {
             digitalWrite(PIN_LED, !digitalRead(PIN_LED));
         }
 
-        digitalWrite(PIN_BUZZER, LOW);        // Buzzer off
+        ledcWriteTone(channel, 0);
+
+        if (wifiTimeout) {
+          digitalWrite (PIN_WIFI_LED, !digitalRead(PIN_WIFI_LED));
+        }
     }
+
+  //task B
+    if (taskB.previous == 0 || (millis() - taskB.previous > taskB.rate)) {
+        taskB.previous = millis(); 
+        // 1000 ms
+
+        wifiSeconds++;
+
+        if ((wifiSeconds > 45) && (WiFi.softAPgetStationNum() == 0)) {
+          wifiTimeout = true;
+        }
+    }
+
 
   if (OSCnewMessage) {
     OSCnewMessage = 0;
     processOSCMsg();
   }
 
-  /* Wii-Remote */
-  wiimote.task();
-    num_run++;
+  
+  if (wifiTimeout) {
+    /* Wii-Remote */
+      wiimote.task();
+      num_run++;
 
-    if (wiimote.available() > 0) 
-    {
+      if (wiimote.available() > 0) {
         ButtonState  button  = wiimote.getButtonState();
         AccelState   accel   = wiimote.getAccelState();
         NunchukState nunchuk = wiimote.getNunchukState();
@@ -680,7 +698,6 @@ void loop() {
             fromWeb = 1;
             OSCpage = 1;
             OSCpush[0]=1;
-            digitalWrite(PIN_WIFI_LED, HIGH);
           }
         }
         if (button & BUTTON_ONE) {
@@ -689,7 +706,6 @@ void loop() {
             taskA.previous = millis();
             action = false;
             playsound();
-            digitalWrite(PIN_WIFI_LED, HIGH);
           }
         }
         if (button & BUTTON_TWO) {
@@ -698,7 +714,6 @@ void loop() {
             taskA.previous = millis(); 
             action = false;
             digitalWrite(PIN_LED, !digitalRead(PIN_LED));
-            digitalWrite(PIN_WIFI_LED, HIGH);
           }
         }
         // Switch ProMode
@@ -712,14 +727,12 @@ void loop() {
             } else {
                 OSCtoggle[0] = 1;
             }
-            digitalWrite(PIN_WIFI_LED, HIGH);
           }
         }
 
         // Calculate Forward/Backward Left/Right
   
       if (button & BUTTON_B) {
-        digitalWrite(PIN_WIFI_LED, HIGH);
 
         switch (accel.xAxis) {
           case 98: OSCfader[0] = 0.175; break;
@@ -882,8 +895,6 @@ switch (accel.yAxis) {
           case 148: OSCfader[1] = 0.0; break;
         }
 
-        
-
       } else {
         OSCfader[0] = 0.5;
         OSCfader[1] = 0.5;
@@ -908,21 +919,10 @@ switch (accel.yAxis) {
         Serial.println(OSCfader[0]);
         }    
 
-    /***
-    if (! logging)
-    {
-        long ms = millis();
-        if (ms - last_ms >= 1000)
-        {
-            Serial.printf("Run %d times per second with %d updates\n", num_run, num_updates);
-            num_run = num_updates = 0;
-            last_ms += 1000;
-        }
     }
-    ***/
 
+    /* Wii-Remote END */
   }
-  /* Wii-Remote END */
 
   timer_value = micros();
 

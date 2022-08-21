@@ -22,6 +22,9 @@ uint8_t slow_loop_counter;  // slow loop 2Hz
 uint8_t sendBattery_counter; // To send battery status
 int16_t BatteryValue;
 
+int16_t wifiSeconds;    // timeout for Wifi (enable bluetooth)
+bool    wifiTimeout;    // timeout for Wifi (enable bluetooth)
+
 long timer_old;
 long timer_value;
 float debugVariable;
