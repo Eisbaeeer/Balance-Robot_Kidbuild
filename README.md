@@ -1,4 +1,4 @@
-![build from source](https://github.com/Eisbaeeer/Balance-Robot_Kidbuild/actions/workflows/build.yml/badge.svg)]
+![build from source](https://github.com/Eisbaeeer/Balance-Robot_Kidbuild/actions/workflows/build.yml/badge.svg)
 
 ![Logo](pics/robot.jpg)
 # Balance-robot Kidbuild 
