@@ -1,3 +1,5 @@
+https://github.com/Eisbaeeer/Balance-Robot_Kidbuild/actions/workflows/main.yml/badge.svg
+
 ![Logo](pics/robot.jpg)
 # Balance-robot Kidbuild 
 
