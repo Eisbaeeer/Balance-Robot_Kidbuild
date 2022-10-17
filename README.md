@@ -1,4 +1,4 @@
-[![.github/workflows/build.yml](https://github.com/Eisbaeeer/Balance-Robot_Kidbuild/actions/workflows/build.yml/badge.svg)](https://github.com/Eisbaeeer/Balance-Robot_Kidbuild/actions/workflows/build.yml)
+[build](https://github.com/Eisbaeeer/Balance-Robot_Kidbuild/actions/workflows/build.yml/badge.svg)](https://github.com/Eisbaeeer/Balance-Robot_Kidbuild/actions/workflows/build.yml)
 
 ![Logo](pics/robot.jpg)
 # Balance-robot Kidbuild 
