@@ -9,6 +9,7 @@ jobs:
         uses: n-vr/setup-platformio-action@v1
         with:
           platformio-version: "6.1.4"
+      - name: Build PlatformIO project
         run: pio run -d Balance-Robot_Kidbuild -e esp32dev
       - name: Adjust firmware filename
         run: mv Balance-Robot_Kidbuild/.pio/build/nodemcuv2/firmware.bin firmware-esp32dev.bin
