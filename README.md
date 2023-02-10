@@ -1,3 +1,5 @@
+![build from source](https://github.com/Eisbaeeer/Balance-Robot_Kidbuild/actions/workflows/build.yml/badge.svg)
+
 ![Logo](pics/robot.jpg)
 # Balance-robot Kidbuild 
 
@@ -61,7 +63,7 @@ You will find all STL files and addons in the STL folder. Typically printed with
 | 1		 | LED 3mm red									|
 | 2		 | LED 3mm/5mm White Super Bright 				|
 | 1		 | Active Buzzer 								|
-| 2 	 | V-Regulator 5V AMS1117 (Kit is presoldered	| 
+| 2 	 | V-Regulator 5V AMS1117 SOT-223 (Kit is presoldered)	| 
 | 1		 | Resistor 470 Ohm 								|
 | 1		 | Capacitor 0.1uF 								|
 | 1		 | Capacitor 100uF/16V rad.						| 	
