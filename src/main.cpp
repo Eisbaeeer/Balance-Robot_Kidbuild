@@ -4,7 +4,12 @@
  * 
  *  Changelog:
  * 
- *  ### Version 1.4
+ *  ### Version 1.5
+ * (20221018)
+ * - Added passive buzzer support
+ * - Robot waiting 45 seconds for Wifi connection. After that the robot will disable Wifi and switch to Wii-remote bluetooth
+ * 
+    ### Version 1.4
  *  (20220727)
  *  - Added Wii-Remote as remote controller (pressing key 1 + 2 on same time to connect the Wii Remote)
  * 
