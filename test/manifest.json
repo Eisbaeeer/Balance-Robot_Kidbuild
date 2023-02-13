@@ -1,5 +1,5 @@
 {
-  "name": "ESPHome",
+  "name": "Robot",
   "builds": [
     {
       "chipFamily": "ESP32",
