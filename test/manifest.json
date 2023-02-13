@@ -5,16 +5,16 @@
       {
         "chipFamily": "ESP32",
         "parts": [
-          { "path": "boot_app0.bin", "offset": 57344 },
-          { "path": "firmware.bin", "offset": 65536 },
-          { "path": "bootloader_dio_40m.bin", "offset": 4096 },
-          { "path": "partitions.bin", "offset": 32768 }
+          { "path": '"boot_app0.bin"', "offset": 57344 },
+          { "path": '"firmware.bin"', "offset": 65536 },
+          { "path": '"bootloader_dio_40m.bin"', "offset": 4096 },
+          { "path": '"partitions.bin"', "offset": 32768 }
         ]
       },
       {
         "chipFamily": "ESP8266",
         "parts": [
-          { "path": "esp8266/SerialHelloWorld.ino.bin", "offset": 0 }
+          { "path": '"esp8266/SerialHelloWorld.ino.bin"', "offset": 0 }
         ]
       }
     ]
