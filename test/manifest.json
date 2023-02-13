@@ -5,10 +5,10 @@
       "chipFamily": "ESP32",
       "improv": false,
       "parts": [
-        { "path": "..\\BinFiles\\bootloader_dio_40m.bin", "offset": "4096" },
-        { "path": "..\\BinFiles\\partitions.bin", "offset": "32768" },
-        { "path": "..\\BinFiles\\boot_app0.bin", "offset": "57344" },
-        { "path": "..\\BinFiles\\firmware.bin", "offset": "65536" }
+        { "path": "../BinFiles/bootloader_dio_40m.bin", "offset": "4096" },
+        { "path": "../BinFiles/partitions.bin", "offset": "32768" },
+        { "path": "../BinFiles/boot_app0.bin", "offset": "57344" },
+        { "path": "../BinFiles/firmware.bin", "offset": "65536" }
       ]
     }
   ]
