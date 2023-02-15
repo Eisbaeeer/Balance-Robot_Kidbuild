@@ -1,6 +1,8 @@
 <!DOCTYPE html><html><body>
     <h1>Kidbuild ESP-Web-Flashing Tool</h1>
     <img src="https://eisbaeeer.github.io/Balance-Robot_Kidbuild/pics/logo.png"><p>
+    
+    DE:<br>
     Auf dieser Seite könnt ihr Euren Microcontroller mit dem Browser flashen. Ihr braucht keine Software installieren!<br>
     Dieser Dienst funktioniert nur mit einem Microsoft-Edge oder Google Chrome Browser.<p>
     
@@ -9,10 +11,18 @@
     Falls das Board nicht als COM Schnittstelle erkannt wird, bitte den entsprechenden Treiber installieren.<br>
     CH9102 Treiber --> <a href="https://learn.adafruit.com/how-to-install-drivers-for-wch-usb-to-serial-chips-ch9102f-ch9102/windows-driver-installation" target="new">Link</a><br>
     CP210x Treiber --> <a href="https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers?tab=downloads" target="new">Silicon labs</a><p>
-    <li>Auf "Install" klicken</li>
+    <li>Auf "INSTALL" klicken</li>
     <li>Den COM-Port des Boards auswählen und "Verbinden" klicken</li>
     <li>Falls eine Fehlermeldung erscheint, den RESET Button dr&uuml;cken und gedr&uuml;ckt halten und nochmals "INSTALL" dr&uuml;cken!</li><p>
     Jetzt sollte die Firmware auf den Controller installiert werden.<p>
+    
+    EN:<br>
+    You can flash your robot via browser. Only supported browsers are Microsoft Edge oder Google Chrome.<P>
+    <h3>Instruction</h3>
+    <li>Install driver for your board, if the usb to serial is unknown (see above for links)</li>
+    <li>Klick the button "INSTALL"</li>
+    <li>Select the attached COM-PORT</li><p>
+    The firmware will be installed, now. If it fails, follow the instructions!<p>
     <script type="module" src="https://unpkg.com/esp-web-tools@3.4.2/dist/web/install-button.js?module"></script>
     <esp-web-install-button manifest="manifest.json"></esp-web-install-button>
 </body>
