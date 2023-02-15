@@ -1,5 +1,5 @@
 {
-    "name": "ESP32",
+    "name": "Kidbuild Balance Robot - flashing ",
     "builds": [
       {
         "chipFamily": "ESP32",

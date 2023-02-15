@@ -1,0 +1,18 @@
+<!DOCTYPE html><html><body>
+    <h1>Kidbuild ESP-Web-Flshing Tool</h1>
+    Auf dieser Seite könnt ihr Euren Microcontroller mit dem Browser flashen. Ihr braucht keine Software installieren!<br>
+    Dieser Dienst funktioniert nur mit einem Microsoft-Edge oder Google Chrome Browser.<p>
+    
+    <h4>Schritt f&uuml;r Schritt</h4>
+    <li>Treiber für das Board installieren (Das Board muss als serielle Schnittstelle erkannt werden)</li>
+    Falls das Board nicht als COM Schnittstelle erkannt wird, bitte den entsprechenden Treiber installieren.<br>
+    CH9102 Treiber --> <a href="https://learn.adafruit.com/how-to-install-drivers-for-wch-usb-to-serial-chips-ch9102f-ch9102/windows-driver-installation">Link</a><br>
+    CP210x Treiber --> <a href="https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers?tab=downloads">Silicon labs</a><br>
+    <li>Auf "Install" klicken</li>
+    <li>Den COM-Port des Boards auswählen und "Verbinden" klicken</li>
+    <li>Falls eine Fehlermeldung erscheint, den RESET Button dr&uuml;cken und gedr&uuml;ckt halten und nochmals vorherigen Punkt ausf&uuml;ren!</li>
+    Jetzt sollte die Firmware auf den Controller installiert werden.<p>
+    <script type="module" src="https://unpkg.com/esp-web-tools@3.4.2/dist/web/install-button.js?module"></script>
+    <esp-web-install-button manifest="manifest.json"></esp-web-install-button>
+</body>
+</html>
