@@ -78,6 +78,7 @@ You will find all STL files and addons in the STL folder. Typically printed with
 | 2		 | Female Header 4 pin 							|
 | 1		 | Male Header 2 pin 							|
 | 1		 | Male Header 3 pin 							|
+| 2		 | Male Header 4 pin 							|
 | 1		 | Jumper cap 									|
 | 2		 | O-ring 3mm ID 82mm							| 
 | 8		 | M3x8 screw									| 
