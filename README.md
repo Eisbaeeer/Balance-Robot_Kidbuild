@@ -69,9 +69,8 @@ You will find all STL files and addons in the STL folder. Typically printed with
 | 1		 | Capacitor 100uF/16V rad.						| 	
 | 2		 | Capacitor 220uF/16V rad.						|
 | 1		 | Rocker Switch Dia. 20mm						| 
-| 2		 | Rechargeable Battery Li-ion 18650 3,7V		| 
-| 1 	 | Dual 18650 Battery Holder					|
-| 1		 | Micro USB Cable (for programming)			|
+| 2		 | Rechargeable Battery Pack 2S Li-ion (2x 18650) 		| 
+| 1		 | Micro USB Cable (optional for programming)	|
 | 1		 | Terminal Screw 2 pin 5mm 					|
 | 2		 | Female Header 15 pin 						|
 | 5		 | Female Header 8 pin 							|
